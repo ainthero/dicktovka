@@ -4,24 +4,33 @@ import {Audio} from 'expo-av';
 import quiet from "quietjs-bundle";
 
 export default function TabTwoScreen() {
-    const [recording, setRecording]: [Audio.Recording | null | undefined, any] = useState();
+    const [recording, setRecording]: [Audio.Recording?, any?] = useState();
     const [text, setText] = useState('');
 
-    let receiver: ReturnType<typeof quiet.receiver> | null = null;
-    let promise: Promise<string> | null = null;
+    const [receiver, setReceiver]: [ReturnType<typeof quiet.receiver>?, any?] = useState();
+    const [promise, setPromise]: [Promise<string>?, any?] = useState();
 
     async function startRecording() {
         try {
+            console.log("pawapepe gamabodi ")
             receiver?.destroy()
-            promise = new Promise<string>(
+            setPromise(new Promise<string>(
                 (resolve, reject) => {
-                    receiver = quiet.receiver({
-                        profile: "audible",
+                    setReceiver(quiet.receiver({
+                        profile: "audible-fsk-robust",
                         onReceive: function (payload) {
                             resolve(quiet.ab2str(payload));
+                        },
+                        onReceiveFail: function (payload) {
+                            resolve("Very bad bro")
+                        },
+                        onCreateFail: function (payload) {
+                            resolve("Very bad bro " + payload)
                         }
-                    });
-                });
+                    }));
+                }));
+
+            console.log("pawapepe gamabodi ", promise)
 
             await Audio.requestPermissionsAsync();
             await Audio.setAudioModeAsync({
@@ -37,11 +46,12 @@ export default function TabTwoScreen() {
 
     async function stopRecording() {
         setRecording(null);
+        console.log(promise);
         await recording?.stopAndUnloadAsync();
         const uri = recording?.getURI();
 
         let result = await Promise.any([promise, new Promise<string>((resolve, reject) => {
-            setTimeout(resolve.bind("Timeout"), 1000)
+            setTimeout(resolve.bind(null, "error timeout" + Math.random()), 1000)
         })]);
         setText(result ?? "Error");
     }
@@ -49,7 +59,7 @@ export default function TabTwoScreen() {
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Tab Two</Text>
-            <View style={styles.separator} />
+            <View style={styles.separator}/>
             <TouchableOpacity
                 onPressIn={startRecording}
                 onPressOut={stopRecording}
@@ -57,7 +67,7 @@ export default function TabTwoScreen() {
             >
                 <Text>Hold for Recording</Text>
             </TouchableOpacity>
-            {text ? <Text style={styles.recognizedText}>{text}</Text> : null}
+            {text ? <Text style={{...styles.recognizedText, color: "#ffffff"}}>{text}</Text> : null}
         </View>
     );
 }
